@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import ModuleForm from '@/components/module-form';
-import { FileCheck, Trash2 } from 'lucide-react';
+import { FileCheck, Trash2, Plus } from 'lucide-react';
+import Link from 'next/link';
 
 const existingModules = [
   { id: 1, title: 'TOEFL Reading Basics', category: 'reading', uploaded: '2024-01-15' },
@@ -19,12 +20,10 @@ export default function ModulPage() {
           <h1 className="text-3xl font-bold text-foreground">Modul PDF</h1>
           <p className="text-foreground-tertiary mt-2">Manage learning modules</p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors"
-        >
-          {showForm ? 'Hide Form' : 'Upload Modul'}
-        </button>
+        <Link href="/dashboard/tambah-modul" className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <Plus size={20} />
+          Tambah Modul
+         </Link>
       </div>
 
       {showForm && (

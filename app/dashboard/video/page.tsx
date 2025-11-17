@@ -1,6 +1,7 @@
 'use client';
 
-import { Video, Trash2 } from 'lucide-react';
+import { Video, Trash2, Plus } from 'lucide-react';
+import Link from 'next/link';
 
 const videos = [
   { id: 1, title: 'Introduction to TOEFL', duration: '12:45', uploaded: '2024-01-20' },
@@ -15,9 +16,10 @@ export default function VideoPage() {
           <h1 className="text-3xl font-bold text-foreground">Video Pembelajaran</h1>
           <p className="text-foreground-tertiary mt-2">Manage learning videos</p>
         </div>
-        <button className="px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors">
-          Add Video
-        </button>
+          <Link href="/dashboard/tambah-video" className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <Plus size={20} />
+          Tambah Video
+         </Link>
       </div>
 
       {/* Video Grid */}

@@ -39,8 +39,6 @@ const menuItems = [
     label: 'Latihan',
     icon: Dumbbell,
     subItems: [
-      { label: 'Vocabulary', href: '/dashboard/vocabulary', icon: Book },
-      { label: 'Grammar', href: '/dashboard/grammar', icon: Book },
       { label: 'Reading', href: '/dashboard/reading', icon: Book },
       { label: 'Listening', href: '/dashboard/listening', icon: Book },
       { label: 'Structure', href: '/dashboard/structure', icon: Book },

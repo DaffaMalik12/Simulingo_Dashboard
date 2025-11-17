@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import BadgeForm from '@/components/badge-form';
-import { Award, Trash2 } from 'lucide-react';
+import { Award, Trash2, Plus } from 'lucide-react';
+import Link from 'next/link';
 
 const existingBadges = [
   { id: 1, name: 'Quick Learner', description: 'Complete 10 questions', icon: '⚡' },
@@ -19,12 +20,10 @@ export default function BadgePage() {
           <h1 className="text-3xl font-bold text-foreground">Badge/Lencana</h1>
           <p className="text-foreground-tertiary mt-2">Manage achievement badges</p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors"
-        >
-          {showForm ? 'Hide Form' : 'Add Badge'}
-        </button>
+       <Link href="/dashboard/tambah-badge" className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <Plus size={20} />
+          Tambah Badge
+        </Link>
       </div>
 
       {showForm && (

@@ -1,98 +1,98 @@
 'use client';
 
-import { Volume2, Edit, Trash2, Plus, Search, Clock, CheckCircle } from 'lucide-react';
+import { BookOpen, Edit, Trash2, Plus, Search, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
-export default function ListeningPage() {
-  // Dummy listening questions data
+export default function StructurePage() {
+  // Dummy structure questions data
   const questions = [
     {
       id: 1,
-      question: "What is the main topic of the conversation?",
-      audio: "conversation_1.mp3",
-      audioDuration: "2:45",
+      question: "The committee _____ the proposal after a lengthy discussion.",
+      sentence: "The committee _____ the proposal after a lengthy discussion.",
       options: [
-        "Planning a vacation",
-        "Discussing work schedules",
-        "Ordering food at a restaurant",
-        "Talking about the weather"
+        "has approved",
+        "have approved",
+        "approving",
+        "approval"
       ],
       correctAnswer: 0,
       difficulty: "easy",
+      topic: "Subject-Verb Agreement",
       createdDate: "15 Nov 2024",
-      usageCount: 124
+      usageCount: 142
     },
     {
       id: 2,
-      question: "According to the speaker, what time does the meeting start?",
-      audio: "meeting_announcement.mp3",
-      audioDuration: "1:30",
+      question: "By the time we arrive, the concert _____.",
+      sentence: "By the time we arrive, the concert _____.",
       options: [
-        "9:00 AM",
-        "10:00 AM",
-        "11:00 AM",
-        "2:00 PM"
+        "will start",
+        "starts",
+        "will have started",
+        "has started"
       ],
-      correctAnswer: 1,
-      difficulty: "easy",
+      correctAnswer: 2,
+      difficulty: "medium",
+      topic: "Future Perfect Tense",
       createdDate: "14 Nov 2024",
-      usageCount: 98
+      usageCount: 178
     },
     {
       id: 3,
-      question: "What problem does the customer describe in the phone call?",
-      audio: "customer_service.mp3",
-      audioDuration: "3:20",
+      question: "_____ the weather was terrible, they decided to go hiking.",
+      sentence: "_____ the weather was terrible, they decided to go hiking.",
       options: [
-        "Late delivery",
-        "Wrong item received",
-        "Payment issue",
-        "Product defect"
+        "Despite",
+        "Although",
+        "Because",
+        "However"
       ],
-      correctAnswer: 3,
-      difficulty: "medium",
+      correctAnswer: 1,
+      difficulty: "easy",
+      topic: "Conjunctions",
       createdDate: "13 Nov 2024",
-      usageCount: 156
+      usageCount: 195
     },
     {
       id: 4,
-      question: "What does the professor suggest about the research methodology?",
-      audio: "lecture_excerpt.mp3",
-      audioDuration: "4:15",
+      question: "The report, _____ by the senior analyst, contained several errors.",
+      sentence: "The report, _____ by the senior analyst, contained several errors.",
       options: [
-        "It needs more data collection",
-        "The sample size is too small",
-        "The approach is innovative",
-        "It requires peer review"
+        "prepare",
+        "preparing",
+        "prepared",
+        "to prepare"
       ],
       correctAnswer: 2,
-      difficulty: "hard",
+      difficulty: "medium",
+      topic: "Participles",
       createdDate: "12 Nov 2024",
-      usageCount: 87
+      usageCount: 123
     },
     {
       id: 5,
-      question: "What is the speaker's attitude toward the new policy?",
-      audio: "opinion_piece.mp3",
-      audioDuration: "2:55",
+      question: "Not only _____ the exam, but she also got the highest score.",
+      sentence: "Not only _____ the exam, but she also got the highest score.",
       options: [
-        "Strongly supportive",
-        "Cautiously optimistic",
-        "Neutral and objective",
-        "Highly critical"
+        "she passed",
+        "did she pass",
+        "she did pass",
+        "passed she"
       ],
       correctAnswer: 1,
-      difficulty: "medium",
+      difficulty: "hard",
+      topic: "Inversion",
       createdDate: "10 Nov 2024",
-      usageCount: 143
+      usageCount: 89
     }
   ];
 
   const stats = [
-    { label: "Total Questions", value: "156", color: "bg-blue-500" },
-    { label: "Easy", value: "62", color: "bg-green-500" },
-    { label: "Medium", value: "58", color: "bg-yellow-500" },
-    { label: "Hard", value: "36", color: "bg-red-500" }
+    { label: "Total Questions", value: "243", color: "bg-purple-500" },
+    { label: "Easy", value: "98", color: "bg-green-500" },
+    { label: "Medium", value: "87", color: "bg-yellow-500" },
+    { label: "Hard", value: "58", color: "bg-red-500" }
   ];
 
   const getDifficultyColor = (difficulty: string) => {
@@ -109,13 +109,13 @@ export default function ListeningPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Listening Questions</h1>
-          <p className="text-gray-600 mt-1">Kelola soal listening comprehension</p>
+          <h1 className="text-3xl font-bold text-gray-900">Structure Questions</h1>
+          <p className="text-gray-600 mt-1">Kelola soal structure dan grammar</p>
         </div>
-        <Link href="/dashboard/tambah-listening" className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+         <Link href="/dashboard/tambah-structure" className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
           <Plus size={20} />
           Tambah Soal
-        </Link>
+         </Link>
       </div>
 
       {/* Stats Cards */}
@@ -141,16 +141,23 @@ export default function ListeningPage() {
             <input
               type="text"
               placeholder="Cari soal..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
-          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
             <option>Semua Level</option>
             <option>Easy</option>
             <option>Medium</option>
             <option>Hard</option>
           </select>
-          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <option>Semua Topik</option>
+            <option>Tenses</option>
+            <option>Conjunctions</option>
+            <option>Participles</option>
+            <option>Subject-Verb Agreement</option>
+          </select>
+          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
             <option>Urutkan</option>
             <option>Terbaru</option>
             <option>Terlama</option>
@@ -166,10 +173,10 @@ export default function ListeningPage() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Question
+                  Sentence
                 </th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Audio
+                  Topic
                 </th>
                 <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Options
@@ -193,17 +200,14 @@ export default function ListeningPage() {
                 <tr key={question.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="max-w-md">
-                      <p className="font-medium text-gray-900 line-clamp-2">{question.question}</p>
+                      <p className="font-medium text-gray-900">{question.sentence}</p>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-lg">
-                        <Volume2 size={16} className="text-blue-600" />
-                        <span className="text-sm text-blue-600 font-medium">{question.audioDuration}</span>
-                      </div>
+                      <BookOpen size={16} className="text-blue-600" />
+                      <span className="text-sm text-blue-600 font-medium">{question.topic}</span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">{question.audio}</p>
                   </td>
                   <td className="px-6 py-4">
                     <div className="space-y-1.5 max-w-xs">
@@ -232,7 +236,7 @@ export default function ListeningPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                      <button className="p-1.5 text-blue-600 hover:bg-purple-50 rounded-lg transition-colors">
                         <Edit size={18} />
                       </button>
                       <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
@@ -249,7 +253,7 @@ export default function ListeningPage() {
         {/* Pagination */}
         <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-between">
           <p className="text-sm text-gray-600">
-            Menampilkan <span className="font-medium">1-5</span> dari <span className="font-medium">156</span> soal
+            Menampilkan <span className="font-medium">1-5</span> dari <span className="font-medium">243</span> soal
           </p>
           <div className="flex gap-2">
             <button className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors">
