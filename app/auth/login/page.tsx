@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Eye, EyeOff, Mail, Lock, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { createSupabaseBrowser } from "@/lib/supabase-browser";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -11,27 +12,26 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const supabase = createSupabaseBrowser();
   const router = useRouter();
 
   const handleLogin = async () => {
     setError("");
     setIsLoading(true);
 
-    // Dummy user
-    const dummyUser = {
-      email: "admin@example.com",
-      password: "admin123",
-    };
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-    setTimeout(() => {
-      if (email === dummyUser.email && password === dummyUser.password) {
-        setIsLoading(false);
-        router.push("/dashboard");
-      } else {
-        setIsLoading(false);
-        setError("Email atau password salah!");
-      }
-    }, 1500);
+    if (error) {
+      setError(error.message);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(false);
+    router.push("/dashboard");
   };
 
   return (
