@@ -147,17 +147,6 @@ export default function LoginPage() {
               )}
             </button>
           </div>
-
-          {/* Sign Up Link */}
-          <p className="text-center text-sm text-gray-600">
-            Don't have an account?{" "}
-            <button
-              type="button"
-              className="text-purple-600 hover:text-purple-700 font-semibold"
-            >
-              Sign up
-            </button>
-          </p>
         </div>
       </div>
     </div>
