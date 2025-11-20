@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Upload,
   X,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { useRouter } from "next/navigation";
 
 interface QuestionFormProps {
   formData: {
@@ -28,13 +29,16 @@ interface QuestionFormProps {
   };
   setFormData: (data: any) => void;
   onSubmit: (e: React.FormEvent) => void;
+  loading?: boolean;
 }
 
 export default function QuestionForm({
   formData,
   setFormData,
   onSubmit,
+  loading = false,
 }: QuestionFormProps) {
+  const router = useRouter();
   const editor = useEditor({
     extensions: [StarterKit],
     content: formData.question,
@@ -43,6 +47,13 @@ export default function QuestionForm({
       setFormData({ ...formData, question: editor.getHTML() });
     },
   });
+
+  // Update editor when formData.question changes externally
+  useEffect(() => {
+    if (editor && formData.question !== editor.getHTML()) {
+      editor.commands.setContent(formData.question);
+    }
+  }, [formData.question, editor]);
 
   const handleOptionChange = (index: number, value: string) => {
     const newOptions = [...formData.options];
@@ -65,7 +76,7 @@ export default function QuestionForm({
       {/* Exam Category */}
       <div>
         <label className="block text-sm font-medium text-foreground mb-3">
-          Exam Category
+          Exam Category <span className="text-red-500">*</span>
         </label>
         <select
           value={formData.exam_category}
@@ -73,6 +84,7 @@ export default function QuestionForm({
             setFormData({ ...formData, exam_category: e.target.value })
           }
           className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-foreground"
+          required
         >
           <option value="">Select Category</option>
           <option value="toefl">ETIC</option>
@@ -143,7 +155,7 @@ export default function QuestionForm({
       {/* Question Text with Rich Text Editor */}
       <div>
         <label className="block text-sm font-medium text-foreground mb-3">
-          Question Text
+          Question Text <span className="text-red-500">*</span>
         </label>
 
         {/* Toolbar */}
@@ -302,7 +314,7 @@ export default function QuestionForm({
       {/* Multiple Choice Options */}
       <div>
         <label className="block text-sm font-medium text-foreground mb-3">
-          Answer Options
+          Answer Options <span className="text-red-500">*</span>
         </label>
         <div className="space-y-3">
           {formData.options.map((option, index) => (
@@ -323,6 +335,7 @@ export default function QuestionForm({
                   onChange={(e) => handleOptionChange(index, e.target.value)}
                   placeholder={`Option ${String.fromCharCode(65 + index)}`}
                   className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-foreground placeholder:text-foreground-tertiary"
+                  required
                 />
               </div>
               <span className="text-sm font-medium text-foreground-tertiary min-w-fit">
@@ -340,13 +353,16 @@ export default function QuestionForm({
       <div className="flex gap-3 pt-4">
         <button
           type="submit"
-          className="flex-1 px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors"
+          disabled={loading}
+          className="flex-1 px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Add Question
+          {loading ? "Adding Question..." : "Add Question"}
         </button>
         <button
           type="button"
-          className="px-6 py-3 border border-border text-foreground font-medium rounded-lg hover:bg-neutral-100 transition-colors"
+          onClick={() => router.back()}
+          disabled={loading}
+          className="px-6 py-3 border border-border text-foreground font-medium rounded-lg hover:bg-neutral-100 transition-colors disabled:opacity-50"
         >
           Cancel
         </button>
