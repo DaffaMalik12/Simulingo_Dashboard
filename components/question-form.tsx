@@ -26,10 +26,12 @@ interface QuestionFormProps {
     audio_url?: string;
     passage: string;
     difficulty: string;
+    time_limit_seconds?: number; // Tambahkan ini
   };
   setFormData: (data: any) => void;
   onSubmit: (e: React.FormEvent) => void;
   loading?: boolean;
+  isEditMode?: boolean; // Tambahkan ini
 }
 
 export default function QuestionForm({
@@ -37,6 +39,7 @@ export default function QuestionForm({
   setFormData,
   onSubmit,
   loading = false,
+  isEditMode = false, // Tambahkan ini
 }: QuestionFormProps) {
   const router = useRouter();
   const editor = useEditor({
@@ -126,6 +129,40 @@ export default function QuestionForm({
             <option value="hard">Hard</option>
           </select>
         </div>
+      </div>
+
+      {/* Time Limit */}
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-3">
+          Time Limit{" "}
+          <span className="text-foreground-tertiary font-normal">
+            (Optional)
+          </span>
+        </label>
+        <select
+          value={formData.time_limit_seconds || ""}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              time_limit_seconds: e.target.value
+                ? parseInt(e.target.value)
+                : undefined,
+            })
+          }
+          className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-foreground"
+        >
+          <option value="">No time limit</option>
+          <option value="15">15 seconds</option>
+          <option value="30">30 seconds</option>
+          <option value="45">45 seconds</option>
+          <option value="60">60 seconds (1 minute)</option>
+          <option value="90">90 seconds (1.5 minutes)</option>
+          <option value="120">120 seconds (2 minutes)</option>
+          <option value="180">180 seconds (3 minutes)</option>
+        </select>
+        <p className="text-xs text-foreground-tertiary mt-2">
+          Select time limit for this question
+        </p>
       </div>
 
       {/* Passage (Optional - for Reading questions) */}
@@ -356,7 +393,13 @@ export default function QuestionForm({
           disabled={loading}
           className="flex-1 px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? "Adding Question..." : "Add Question"}
+          {loading
+            ? isEditMode
+              ? "Updating Question..."
+              : "Adding Question..."
+            : isEditMode
+            ? "Update Question"
+            : "Add Question"}
         </button>
         <button
           type="button"

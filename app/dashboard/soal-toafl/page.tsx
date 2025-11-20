@@ -12,9 +12,11 @@ import {
   Clock,
   ChevronLeft,
   ChevronRight,
+  Timer, // Tambahkan import Timer
 } from "lucide-react";
 import Link from "next/link";
 import { createSupabaseBrowser } from "@/lib/supabase-browser";
+import Swal from "sweetalert2"; // Tambahkan import ini
 
 interface Question {
   id: string;
@@ -27,6 +29,7 @@ interface Question {
   audio_url?: string | null;
   passage?: string | null;
   created_at: string;
+  time_limit_seconds?: number | null; // Tambahkan ini
 }
 
 export default function TOAFLPage() {
@@ -60,14 +63,28 @@ export default function TOAFLPage() {
       setQuestions(data || []);
     } catch (error: any) {
       console.error("Error fetching questions:", error);
-      alert(`Error: ${error.message}`);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.message,
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this question?")) {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (!result.isConfirmed) {
       return;
     }
 
@@ -78,10 +95,21 @@ export default function TOAFLPage() {
 
       // Remove from local state
       setQuestions(questions.filter((q) => q.id !== id));
-      alert("Question deleted successfully");
+
+      Swal.fire({
+        icon: "success",
+        title: "Deleted!",
+        text: "Question deleted successfully",
+        timer: 1500,
+        showConfirmButton: false,
+      });
     } catch (error: any) {
       console.error("Error deleting question:", error);
-      alert(`Error: ${error.message}`);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.message,
+      });
     }
   };
 
@@ -279,6 +307,12 @@ export default function TOAFLPage() {
                       {question.difficulty.charAt(0).toUpperCase() +
                         question.difficulty.slice(1)}
                     </span>
+                    {question.time_limit_seconds && (
+                      <span className="flex items-center gap-1.5 px-2.5 py-1 bg-orange-100 text-orange-700 rounded-md text-xs font-medium">
+                        <Timer size={12} />
+                        {question.time_limit_seconds}s
+                      </span>
+                    )}
                     {question.audio_url && (
                       <span className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-medium">
                         <Volume2 size={12} />
