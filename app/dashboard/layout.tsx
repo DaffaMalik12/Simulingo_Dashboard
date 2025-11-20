@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Sidebar from '@/components/sidebar';
-import Header from '@/components/header';
+import { useState } from "react";
+import Sidebar from "@/components/sidebar";
+import Header from "@/components/header";
 
 export default function DashboardLayout({
   children,
@@ -17,9 +17,7 @@ export default function DashboardLayout({
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         <main className="flex-1 overflow-auto">
-          <div className="p-8">
-            {children}
-          </div>
+          <div className="p-8">{children}</div>
         </main>
       </div>
     </div>
