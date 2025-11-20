@@ -1,100 +1,125 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  BookOpen, 
-  FileText, 
-  Video, 
-  Dumbbell, 
-  FileCheck, 
-  Badge, 
-  Users, 
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { createSupabaseBrowser } from "@/lib/supabase-browser";
+import {
+  LayoutDashboard,
+  BookOpen,
+  FileText,
+  Video,
+  Dumbbell,
+  FileCheck,
+  Badge,
+  Users,
   Settings,
   ChevronDown,
   ChevronRight,
   Plus,
   Book,
-  ClipboardList
-} from 'lucide-react';
+  ClipboardList,
+} from "lucide-react";
 
 const menuItems = [
-  { 
-    label: 'Dashboard', 
-    href: '/dashboard', 
-    icon: LayoutDashboard 
+  {
+    label: "Dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboard,
   },
   {
-    label: 'Soal',
+    label: "Soal",
     icon: BookOpen,
     subItems: [
-      { label: 'Soal TOEFL', href: '/dashboard/soal-toefl',  icon: ClipboardList },
-      { label: 'Soal TOAFL', href: '/dashboard/soal-toafl', icon: ClipboardList   },
-     
-    ]
+      {
+        label: "Soal TOEFL",
+        href: "/dashboard/soal-toefl",
+        icon: ClipboardList,
+      },
+      {
+        label: "Soal TOAFL",
+        href: "/dashboard/soal-toafl",
+        icon: ClipboardList,
+      },
+    ],
   },
   {
-    label: 'Latihan',
+    label: "Latihan",
     icon: Dumbbell,
     subItems: [
-      { label: 'Reading', href: '/dashboard/reading', icon: Book },
-      { label: 'Listening', href: '/dashboard/listening', icon: Book },
-      { label: 'Structure', href: '/dashboard/structure', icon: Book },
-    ]
+      { label: "Reading", href: "/dashboard/reading", icon: Book },
+      { label: "Listening", href: "/dashboard/listening", icon: Book },
+      { label: "Structure", href: "/dashboard/structure", icon: Book },
+    ],
   },
   {
-    label: 'Artikel',
+    label: "Artikel",
     icon: FileText,
-    href: '/dashboard/artikel'
+    href: "/dashboard/artikel",
   },
-  { 
-    label: 'Video', 
-    href: '/dashboard/video', 
-    icon: Video 
+  {
+    label: "Video",
+    href: "/dashboard/video",
+    icon: Video,
   },
-  { 
-    label: 'Modul PDF', 
-    href: '/dashboard/modul', 
-    icon: FileCheck 
+  {
+    label: "Modul PDF",
+    href: "/dashboard/modul",
+    icon: FileCheck,
   },
-  { 
-    label: 'Badge', 
-    href: '/dashboard/badge', 
-    icon: Badge 
+  {
+    label: "Badge",
+    href: "/dashboard/badge",
+    icon: Badge,
   },
-  { 
-    label: 'Pengguna', 
-    href: '/dashboard/pengguna', 
-    icon: Users 
+  {
+    label: "Pengguna",
+    href: "/dashboard/pengguna",
+    icon: Users,
   },
-  { 
-    label: 'Pengaturan', 
-    href: '/dashboard/pengaturan', 
-    icon: Settings 
+  {
+    label: "Pengaturan",
+    href: "/dashboard/pengaturan",
+    icon: Settings,
   },
 ];
 
 export default function Sidebar({ isOpen }: { isOpen: boolean }) {
   const pathname = usePathname();
   const [openDropdowns, setOpenDropdowns] = useState<string[]>([]);
+  const [userEmail, setUserEmail] = useState("");
+  const supabase = createSupabaseBrowser();
+
+  // Ambil data user dari Supabase
+  useEffect(() => {
+    const getUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) {
+        setUserEmail(data.user.email || "Admin");
+      }
+    };
+    getUser();
+  }, []);
 
   const toggleDropdown = (label: string) => {
-    setOpenDropdowns(prev => 
-      prev.includes(label) 
-        ? prev.filter(item => item !== label)
+    setOpenDropdowns((prev) =>
+      prev.includes(label)
+        ? prev.filter((item) => item !== label)
         : [...prev, label]
     );
   };
 
   const isParentActive = (subItems?: Array<{ href: string }>) => {
     if (!subItems) return false;
-    return subItems.some(item => pathname === item.href);
+    return subItems.some((item) => pathname === item.href);
   };
 
   return (
-    <aside className={`${isOpen ? 'w-64' : 'w-0'} bg-white border-r border-gray-200 transition-all duration-300 overflow-hidden flex flex-col h-screen`}>
+    <aside
+      className={`${
+        isOpen ? "w-64" : "w-0"
+      } bg-white border-r border-gray-200 transition-all duration-300 overflow-hidden flex flex-col h-screen`}
+    >
       <div className="p-6 border-b border-gray-200">
         <h1 className="text-xl font-bold text-gray-900">Simulingo</h1>
         <p className="text-xs text-gray-500 mt-1">Admin Dashboard</p>
@@ -106,7 +131,9 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
             const Icon = item.icon;
             const hasSubItems = item.subItems && item.subItems.length > 0;
             const isDropdownOpen = openDropdowns.includes(item.label);
-            const isActive = item.href ? pathname === item.href : isParentActive(item.subItems);
+            const isActive = item.href
+              ? pathname === item.href
+              : isParentActive(item.subItems);
 
             if (hasSubItems) {
               return (
@@ -114,9 +141,9 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
                   <button
                     onClick={() => toggleDropdown(item.label)}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      isActive 
-                        ? 'bg-blue-50 text-blue-700' 
-                        : 'text-gray-700 hover:bg-gray-100'
+                      isActive
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-700 hover:bg-gray-100"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -129,7 +156,7 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
                       <ChevronRight size={16} className="text-gray-500" />
                     )}
                   </button>
-                  
+
                   {isDropdownOpen && (
                     <div className="ml-4 mt-1 space-y-1">
                       {item.subItems?.map((subItem) => {
@@ -140,9 +167,9 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
                             key={subItem.label}
                             href={subItem.href}
                             className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                              isSubActive 
-                                ? 'bg-blue-50 text-blue-700 font-medium' 
-                                : 'text-gray-600 hover:bg-gray-50'
+                              isSubActive
+                                ? "bg-blue-50 text-blue-700 font-medium"
+                                : "text-gray-600 hover:bg-gray-50"
                             }`}
                           >
                             {SubIcon && <SubIcon size={16} />}
@@ -161,9 +188,9 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
                 key={item.label}
                 href={item.href!}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive 
-                    ? 'bg-blue-50 text-blue-700' 
-                    : 'text-gray-700 hover:bg-gray-100'
+                  isActive
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
                 <Icon size={18} />
@@ -177,7 +204,9 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
       <div className="p-4 border-t border-gray-200">
         <div className="bg-gray-50 rounded-lg p-3">
           <p className="text-xs font-medium text-gray-500">Admin</p>
-          <p className="text-sm font-semibold text-gray-900 mt-0.5">admin@edutoefl.com</p>
+          <p className="text-sm font-semibold text-gray-900 mt-0.5">
+            {userEmail || "Loading..."}
+          </p>
         </div>
       </div>
     </aside>
