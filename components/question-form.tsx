@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Upload,
   X,
@@ -10,9 +10,12 @@ import {
   ListOrdered,
   Undo,
   Redo,
+  Play,
+  Pause,
 } from "lucide-react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { useRouter } from "next/navigation";
 
 interface QuestionFormProps {
   formData: {
@@ -25,16 +28,27 @@ interface QuestionFormProps {
     audio_url?: string;
     passage: string;
     difficulty: string;
+    time_limit_seconds?: number; // Tambahkan ini
   };
   setFormData: (data: any) => void;
   onSubmit: (e: React.FormEvent) => void;
+  loading?: boolean;
+  isEditMode?: boolean; // Tambahkan ini
 }
 
 export default function QuestionForm({
   formData,
   setFormData,
   onSubmit,
+  loading = false,
+  isEditMode = false, // Tambahkan ini
 }: QuestionFormProps) {
+  const router = useRouter();
+  const [audioPreview, setAudioPreview] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const editor = useEditor({
     extensions: [StarterKit],
     content: formData.question,
@@ -44,6 +58,13 @@ export default function QuestionForm({
     },
   });
 
+  // Update editor when formData.question changes externally
+  useEffect(() => {
+    if (editor && formData.question !== editor.getHTML()) {
+      editor.commands.setContent(formData.question);
+    }
+  }, [formData.question, editor]);
+
   const handleOptionChange = (index: number, value: string) => {
     const newOptions = [...formData.options];
     newOptions[index] = value;
@@ -52,20 +73,108 @@ export default function QuestionForm({
 
   const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
-      setFormData({ ...formData, audio: e.target.files[0] });
+      const file = e.target.files[0];
+      setFormData({ ...formData, audio: file });
+
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setAudioPreview(previewUrl);
     }
   };
 
   const removeAudio = () => {
     setFormData({ ...formData, audio: null, audio_url: undefined });
+    if (audioPreview) {
+      URL.revokeObjectURL(audioPreview);
+      setAudioPreview(null);
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setIsPlaying(false);
+    }
   };
+
+  // Get audio URL for preview - Pindahkan ke sini sebelum useEffect
+  const getAudioUrl = () => {
+    if (formData.audio && audioPreview) {
+      return audioPreview;
+    }
+    if (formData.audio_url) {
+      return formData.audio_url;
+    }
+    return null;
+  };
+
+  const audioUrl = getAudioUrl();
+
+  // Update progress bar in real-time
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const updateTime = () => {
+      setCurrentTime(audio.currentTime);
+      if (audio.duration) {
+        setDuration(audio.duration);
+      }
+    };
+
+    const updateDuration = () => {
+      setDuration(audio.duration);
+    };
+
+    audio.addEventListener("timeupdate", updateTime);
+    audio.addEventListener("loadedmetadata", updateDuration);
+    audio.addEventListener("loadeddata", updateDuration);
+
+    return () => {
+      audio.removeEventListener("timeupdate", updateTime);
+      audio.removeEventListener("loadedmetadata", updateDuration);
+      audio.removeEventListener("loadeddata", updateDuration);
+    };
+  }, [audioUrl]);
+
+  // Reset time when audio changes
+  useEffect(() => {
+    setCurrentTime(0);
+    setIsPlaying(false);
+  }, [audioUrl]);
+
+  const togglePlayPause = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleAudioEnded = () => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+    }
+  };
+
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (audioPreview) {
+        URL.revokeObjectURL(audioPreview);
+      }
+    };
+  }, [audioPreview]);
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       {/* Exam Category */}
       <div>
         <label className="block text-sm font-medium text-foreground mb-3">
-          Exam Category
+          Exam Category <span className="text-red-500">*</span>
         </label>
         <select
           value={formData.exam_category}
@@ -73,6 +182,7 @@ export default function QuestionForm({
             setFormData({ ...formData, exam_category: e.target.value })
           }
           className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-foreground"
+          required
         >
           <option value="">Select Category</option>
           <option value="toefl">ETIC</option>
@@ -116,6 +226,40 @@ export default function QuestionForm({
         </div>
       </div>
 
+      {/* Time Limit */}
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-3">
+          Time Limit{" "}
+          <span className="text-foreground-tertiary font-normal">
+            (Optional)
+          </span>
+        </label>
+        <select
+          value={formData.time_limit_seconds || ""}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              time_limit_seconds: e.target.value
+                ? parseInt(e.target.value)
+                : undefined,
+            })
+          }
+          className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-foreground"
+        >
+          <option value="">No time limit</option>
+          <option value="15">15 seconds</option>
+          <option value="30">30 seconds</option>
+          <option value="45">45 seconds</option>
+          <option value="60">60 seconds (1 minute)</option>
+          <option value="90">90 seconds (1.5 minutes)</option>
+          <option value="120">120 seconds (2 minutes)</option>
+          <option value="180">180 seconds (3 minutes)</option>
+        </select>
+        <p className="text-xs text-foreground-tertiary mt-2">
+          Select time limit for this question
+        </p>
+      </div>
+
       {/* Passage (Optional - for Reading questions) */}
       {formData.type === "reading" && (
         <div>
@@ -143,7 +287,7 @@ export default function QuestionForm({
       {/* Question Text with Rich Text Editor */}
       <div>
         <label className="block text-sm font-medium text-foreground mb-3">
-          Question Text
+          Question Text <span className="text-red-500">*</span>
         </label>
 
         {/* Toolbar */}
@@ -248,30 +392,89 @@ export default function QuestionForm({
             Audio File
           </label>
           {formData.audio || formData.audio_url ? (
-            <div className="border border-border rounded-lg p-4 bg-surface">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Upload size={20} className="text-primary" />
+            <div className="space-y-3">
+              <div className="border border-border rounded-lg p-4 bg-surface">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Upload size={20} className="text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        {formData.audio
+                          ? formData.audio.name
+                          : "Audio uploaded"}
+                      </p>
+                      <p className="text-xs text-foreground-tertiary">
+                        {formData.audio
+                          ? `${(formData.audio.size / 1024 / 1024).toFixed(
+                              2
+                            )} MB`
+                          : "Existing audio"}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {formData.audio ? formData.audio.name : "Audio uploaded"}
-                    </p>
-                    <p className="text-xs text-foreground-tertiary">
-                      {formData.audio
-                        ? `${(formData.audio.size / 1024 / 1024).toFixed(2)} MB`
-                        : "Existing audio"}
-                    </p>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={removeAudio}
+                    className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+                  >
+                    <X size={20} className="text-foreground-tertiary" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={removeAudio}
-                  className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
-                >
-                  <X size={20} className="text-foreground-tertiary" />
-                </button>
+
+                {/* Audio Player */}
+                {audioUrl && (
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <audio
+                      ref={audioRef}
+                      src={audioUrl}
+                      onEnded={handleAudioEnded}
+                      className="hidden"
+                    />
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={togglePlayPause}
+                        className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-colors"
+                      >
+                        {isPlaying ? (
+                          <Pause size={18} fill="currentColor" />
+                        ) : (
+                          <Play size={18} fill="currentColor" />
+                        )}
+                      </button>
+                      <div className="flex-1">
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-primary h-2 rounded-full transition-all"
+                            style={{
+                              width: audioRef.current
+                                ? `${
+                                    (audioRef.current.currentTime /
+                                      audioRef.current.duration) *
+                                    100
+                                  }%`
+                                : "0%",
+                            }}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-xs text-foreground-tertiary">
+                            {audioRef.current
+                              ? `${Math.floor(audioRef.current.currentTime)}s`
+                              : "0s"}
+                          </span>
+                          <span className="text-xs text-foreground-tertiary">
+                            {audioRef.current && audioRef.current.duration
+                              ? `${Math.floor(audioRef.current.duration)}s`
+                              : "--"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -302,7 +505,7 @@ export default function QuestionForm({
       {/* Multiple Choice Options */}
       <div>
         <label className="block text-sm font-medium text-foreground mb-3">
-          Answer Options
+          Answer Options <span className="text-red-500">*</span>
         </label>
         <div className="space-y-3">
           {formData.options.map((option, index) => (
@@ -323,6 +526,7 @@ export default function QuestionForm({
                   onChange={(e) => handleOptionChange(index, e.target.value)}
                   placeholder={`Option ${String.fromCharCode(65 + index)}`}
                   className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-foreground placeholder:text-foreground-tertiary"
+                  required
                 />
               </div>
               <span className="text-sm font-medium text-foreground-tertiary min-w-fit">
@@ -340,13 +544,22 @@ export default function QuestionForm({
       <div className="flex gap-3 pt-4">
         <button
           type="submit"
-          className="flex-1 px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors"
+          disabled={loading}
+          className="flex-1 px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Add Question
+          {loading
+            ? isEditMode
+              ? "Updating Question..."
+              : "Adding Question..."
+            : isEditMode
+            ? "Update Question"
+            : "Add Question"}
         </button>
         <button
           type="button"
-          className="px-6 py-3 border border-border text-foreground font-medium rounded-lg hover:bg-neutral-100 transition-colors"
+          onClick={() => router.back()}
+          disabled={loading}
+          className="px-6 py-3 border border-border text-foreground font-medium rounded-lg hover:bg-neutral-100 transition-colors disabled:opacity-50"
         >
           Cancel
         </button>
