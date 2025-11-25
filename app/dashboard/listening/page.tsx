@@ -1,118 +1,177 @@
-'use client';
+"use client";
 
-import { Volume2, Edit, Trash2, Plus, Search, Clock, CheckCircle } from 'lucide-react';
-import Link from 'next/link';
+import {
+  Volume2,
+  Edit,
+  Trash2,
+  Plus,
+  Search,
+  CheckCircle,
+} from "lucide-react";
+import Link from "next/link";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createSupabaseBrowser } from "@/lib/supabase-browser";
+import Swal from "sweetalert2";
+
+interface ListeningQuestion {
+  id: string;
+  audio_url: string | null;
+  question: string | null;
+  options: string[] | null;
+  correct_answer: number | null;
+  created_at: string;
+}
 
 export default function ListeningPage() {
-  // Dummy listening questions data
-  const questions = [
-    {
-      id: 1,
-      question: "What is the main topic of the conversation?",
-      audio: "conversation_1.mp3",
-      audioDuration: "2:45",
-      options: [
-        "Planning a vacation",
-        "Discussing work schedules",
-        "Ordering food at a restaurant",
-        "Talking about the weather"
-      ],
-      correctAnswer: 0,
-      difficulty: "easy",
-      createdDate: "15 Nov 2024",
-      usageCount: 124
-    },
-    {
-      id: 2,
-      question: "According to the speaker, what time does the meeting start?",
-      audio: "meeting_announcement.mp3",
-      audioDuration: "1:30",
-      options: [
-        "9:00 AM",
-        "10:00 AM",
-        "11:00 AM",
-        "2:00 PM"
-      ],
-      correctAnswer: 1,
-      difficulty: "easy",
-      createdDate: "14 Nov 2024",
-      usageCount: 98
-    },
-    {
-      id: 3,
-      question: "What problem does the customer describe in the phone call?",
-      audio: "customer_service.mp3",
-      audioDuration: "3:20",
-      options: [
-        "Late delivery",
-        "Wrong item received",
-        "Payment issue",
-        "Product defect"
-      ],
-      correctAnswer: 3,
-      difficulty: "medium",
-      createdDate: "13 Nov 2024",
-      usageCount: 156
-    },
-    {
-      id: 4,
-      question: "What does the professor suggest about the research methodology?",
-      audio: "lecture_excerpt.mp3",
-      audioDuration: "4:15",
-      options: [
-        "It needs more data collection",
-        "The sample size is too small",
-        "The approach is innovative",
-        "It requires peer review"
-      ],
-      correctAnswer: 2,
-      difficulty: "hard",
-      createdDate: "12 Nov 2024",
-      usageCount: 87
-    },
-    {
-      id: 5,
-      question: "What is the speaker's attitude toward the new policy?",
-      audio: "opinion_piece.mp3",
-      audioDuration: "2:55",
-      options: [
-        "Strongly supportive",
-        "Cautiously optimistic",
-        "Neutral and objective",
-        "Highly critical"
-      ],
-      correctAnswer: 1,
-      difficulty: "medium",
-      createdDate: "10 Nov 2024",
-      usageCount: 143
+  const router = useRouter();
+  const supabase = createSupabaseBrowser();
+  const [questions, setQuestions] = useState<ListeningQuestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    loadQuestions();
+  }, [searchQuery]);
+
+  const loadQuestions = async () => {
+    setLoading(true);
+    try {
+      let query = supabase
+        .from("listening_questions")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      // Apply search filter
+      if (searchQuery) {
+        query = query.ilike("question", `%${searchQuery}%`);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      setQuestions(data || []);
+    } catch (error: any) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.message || "Failed to load listening questions",
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
-
-  const stats = [
-    { label: "Total Questions", value: "156", color: "bg-blue-500" },
-    { label: "Easy", value: "62", color: "bg-green-500" },
-    { label: "Medium", value: "58", color: "bg-yellow-500" },
-    { label: "Hard", value: "36", color: "bg-red-500" }
-  ];
-
-  const getDifficultyColor = (difficulty: string) => {
-    const colors: Record<string, string> = {
-      easy: "text-green-500",
-      medium: "text-yellow-500",
-      hard: "text-red-500",
-    };
-    return colors[difficulty] || colors.easy;
   };
+
+  const handleDelete = async (id: string, questionText: string | null) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: `Delete listening question "${questionText || "Untitled"}"?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        // Get question data first to delete audio from storage
+        const { data: questionData } = await supabase
+          .from("listening_questions")
+          .select("audio_url")
+          .eq("id", id)
+          .single();
+
+        // Delete from database
+        const { error } = await supabase
+          .from("listening_questions")
+          .delete()
+          .eq("id", id);
+
+        if (error) throw error;
+
+        // Optionally delete audio file from storage
+        // Note: You might want to keep files for backup or delete them
+        // if (questionData?.audio_url) {
+        //   const audioPath = questionData.audio_url.split('/').pop();
+        //   await supabase.storage.from('audio').remove([`audio/${audioPath}`]);
+        // }
+
+        Swal.fire({
+          icon: "success",
+          title: "Deleted!",
+          text: "Listening question has been deleted.",
+        });
+
+        loadQuestions();
+      } catch (error: any) {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: error.message || "Failed to delete listening question",
+        });
+      }
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const getAudioFileName = (url: string | null) => {
+    if (!url) return "No audio";
+    const parts = url.split("/");
+    return parts[parts.length - 1] || "audio file";
+  };
+
+  // Calculate stats
+  const stats = [
+    {
+      label: "Total Questions",
+      value: questions.length.toString(),
+      color: "bg-blue-500",
+    },
+    {
+      label: "With Audio",
+      value: questions.filter((q) => q.audio_url).length.toString(),
+      color: "bg-green-500",
+    },
+    {
+      label: "Without Audio",
+      value: questions.filter((q) => !q.audio_url).length.toString(),
+      color: "bg-yellow-500",
+    },
+    {
+      label: "Total Options",
+      value: questions
+        .reduce((acc, q) => acc + (q.options?.length || 0), 0)
+        .toString(),
+      color: "bg-purple-500",
+    },
+  ];
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Listening Questions</h1>
-          <p className="text-gray-600 mt-1">Kelola soal listening comprehension</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Listening Questions
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Kelola soal listening comprehension
+          </p>
         </div>
-        <Link href="/dashboard/tambah-listening" className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+        <Link
+          href="/dashboard/tambah-listening"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
           <Plus size={20} />
           Tambah Soal
         </Link>
@@ -121,13 +180,20 @@ export default function ListeningPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
-          <div key={index} className="bg-white rounded-lg border border-gray-200 p-5">
+          <div
+            key={index}
+            className="bg-white rounded-lg border border-gray-200 p-5"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {stat.value}
+                </p>
               </div>
-              <div className={`w-12 h-12 ${stat.color} rounded-lg opacity-10`}></div>
+              <div
+                className={`w-12 h-12 ${stat.color} rounded-lg opacity-10`}
+              ></div>
             </div>
           </div>
         ))}
@@ -137,139 +203,153 @@ export default function ListeningPage() {
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <div className="flex flex-col md:flex-row gap-3">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={20}
+            />
             <input
               type="text"
               placeholder="Cari soal..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option>Semua Level</option>
-            <option>Easy</option>
-            <option>Medium</option>
-            <option>Hard</option>
-          </select>
-          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option>Urutkan</option>
-            <option>Terbaru</option>
-            <option>Terlama</option>
-            <option>Paling Banyak Digunakan</option>
-          </select>
         </div>
       </div>
 
       {/* Questions Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Question
-                </th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Audio
-                </th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Options
-                </th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Difficulty
-                </th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Usage
-                </th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Aksi
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {questions.map((question) => (
-                <tr key={question.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="max-w-md">
-                      <p className="font-medium text-gray-900 line-clamp-2">{question.question}</p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-lg">
-                        <Volume2 size={16} className="text-blue-600" />
-                        <span className="text-sm text-blue-600 font-medium">{question.audioDuration}</span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">{question.audio}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="space-y-1.5 max-w-xs">
-                      {question.options.map((option, index) => (
-                        <div key={index} className="flex items-start gap-2">
-                          {index === question.correctAnswer && (
-                            <CheckCircle size={14} className="text-green-600 mt-0.5" />
-                          )}
-                          <span className={`text-xs ${index === question.correctAnswer ? 'text-green-700 font-medium' : 'text-gray-600'} line-clamp-1`}>
-                            {String.fromCharCode(65 + index)}. {option}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium capitalize ${getDifficultyColor(question.difficulty)}`}>
-                      {question.difficulty}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-sm text-gray-600">{question.usageCount}x</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-sm text-gray-600">{question.createdDate}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                        <Edit size={18} />
-                      </button>
-                      <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-between">
-          <p className="text-sm text-gray-600">
-            Menampilkan <span className="font-medium">1-5</span> dari <span className="font-medium">156</span> soal
-          </p>
-          <div className="flex gap-2">
-            <button className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors">
-              Previous
-            </button>
-            <button className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm">
-              1
-            </button>
-            <button className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors">
-              2
-            </button>
-            <button className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors">
-              3
-            </button>
-            <button className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors">
-              Next
-            </button>
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading questions...</p>
           </div>
         </div>
-      </div>
+      ) : questions.length === 0 ? (
+        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+          <Volume2 size={48} className="text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600">No listening questions found</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Question
+                  </th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Audio
+                  </th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Options
+                  </th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Aksi
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {questions.map((question) => {
+                  const options = question.options || [];
+
+                  return (
+                    <tr
+                      key={question.id}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="max-w-md">
+                          <p className="font-medium text-gray-900 line-clamp-2">
+                            {question.question || "No question"}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {question.audio_url ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-lg w-fit">
+                              <Volume2 size={16} className="text-blue-600" />
+                              <a
+                                href={question.audio_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-blue-600 font-medium hover:underline"
+                              >
+                                Play Audio
+                              </a>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              {getAudioFileName(question.audio_url)}
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">
+                            No audio
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="space-y-1.5 max-w-xs">
+                          {options.map((option, index) => (
+                            <div key={index} className="flex items-start gap-2">
+                              {index === question.correct_answer && (
+                                <CheckCircle
+                                  size={14}
+                                  className="text-green-600 mt-0.5"
+                                />
+                              )}
+                              <span
+                                className={`text-xs ${
+                                  index === question.correct_answer
+                                    ? "text-green-700 font-medium"
+                                    : "text-gray-600"
+                                } line-clamp-1`}
+                              >
+                                {String.fromCharCode(65 + index)}. {option}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-sm text-gray-600">
+                          {formatDate(question.created_at)}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/dashboard/tambah-listening?id=${question.id}`}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <Edit size={18} />
+                          </Link>
+                          <button
+                            onClick={() =>
+                              handleDelete(question.id, question.question)
+                            }
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
