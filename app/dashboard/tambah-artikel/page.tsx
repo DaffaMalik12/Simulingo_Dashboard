@@ -67,7 +67,7 @@ function TambahArtikelContent() {
           category: data.category || "general",
           content: data.content || "",
           tags: data.tags || [],
-          author: data.author || "", // Tambahkan ini
+          author: data.author || "",
         });
         setExistingThumbnailUrl(data.thumbnail_url);
       }
