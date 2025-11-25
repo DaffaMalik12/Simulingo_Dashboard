@@ -19,6 +19,7 @@ import {
   Plus,
   Book,
   ClipboardList,
+  Goal,
 } from "lucide-react";
 
 const menuItems = [
@@ -71,6 +72,11 @@ const menuItems = [
     label: "Badge",
     href: "/dashboard/badge",
     icon: Badge,
+  },
+  {
+    label: "Mission",
+    href: "/dashboard/mission",
+    icon: Goal,
   },
   {
     label: "Pengguna",
